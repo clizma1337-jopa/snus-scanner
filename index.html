@@ -4,56 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Сканер</title>
+    <!-- Подключаем Telegram WebApp SDK -->
     <script src="https://telegram.org"></script>
-    <script src="https://unpkg.com"></script>
     <style>
-        body { font-family: sans-serif; background: #1c1c1e; color: white; text-align: center; padding: 20px; }
-        button { background: #007aff; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 10px; margin-top: 20px; width: 100%; cursor: pointer; }
-        #reader { width: 100%; max-width: 400px; margin: 20px auto; border-radius: 12px; overflow: hidden; background: #2c2c2e; min-height: 250px; }
-        #status { color: #ff3b30; margin-top: 10px; font-weight: bold; }
+        body { font-family: sans-serif; background: #1c1c1e; color: white; text-align: center; padding: 40px 20px; }
+        button { background: #007aff; color: white; border: none; padding: 18px 30px; font-size: 18px; border-radius: 12px; margin-top: 30px; width: 100%; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h2>Сканирование шайбы</h2>
-    <div id="reader"></div>
-    <button id="startBtn">Включить камеру</button>
-    <div id="status"></div>
+    <h2>Сканер штрих-кодов</h2>
+    <p>Нажми на кнопку ниже, чтобы запустить встроенную камеру Telegram</p>
+    
+    <button id="scanBtn">📸 Включить камеру</button>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
-        const statusDiv = document.getElementById('status');
-        let html5QrcodeScanner = null;
-
-        document.getElementById('startBtn').addEventListener('click', () => {
-            statusDiv.innerText = "Запуск камеры...";
-            
-            // Если сканер уже запущен, не пересоздаем его
-            if (!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5Qrcode("reader");
-            }
-            
-            html5QrcodeScanner.start(
-                { facingMode: "environment" }, // Просим заднюю камеру
-                { fps: 10, qrbox: { width: 250, height: 150 } },
-                (decodedText) => {
-                    html5QrcodeScanner.stop().then(() => {
-                        tg.sendData(decodedText); 
-                        tg.close();
-                    }).catch(err => {
-                        statusDiv.innerText = "Ошибка остановки: " + err;
-                    });
-                },
-                (errorMessage) => { /* тихий пропуск ошибок фокуса */ }
-            ).then(() => {
-                statusDiv.innerText = "Камера успешно работает!";
-                statusDiv.style.color = "#34c759";
-            }).catch(err => {
-                // Если телефон заблокирует доступ, мы увидим точный текст ошибки прямо на экране
-                statusDiv.innerText = "Ошибка запуска камеры: " + err;
-                statusDiv.style.color = "#ff3b30";
+        document.getElementById('scanBtn').addEventListener('click', () => {
+            // Вызываем официальный нативный сканер Телеграма
+            tg.showScanQrPopup({ text: "Наведи камеру на штрих-код шайбы" }, function(text) {
+                // Как только код считан — отправляем его боту и закрываем окно
+                tg.sendData(text);
+                tg.closeScanQrPopup(); // закрываем шторку сканера
+                tg.close(); // закрываем само WebApp
+                return true;
             });
         });
     </script>
