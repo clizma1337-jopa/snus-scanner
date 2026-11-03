@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сканер</title>
+    <script src="https://telegram.org"></script>
+    <script src="https://unpkg.com"></script>
+    <style>
+        body { font-family: sans-serif; background: #1c1c1e; color: white; text-align: center; padding: 20px; }
+        button { background: #007aff; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 10px; margin-top: 20px; width: 100%; cursor: pointer; }
+        #reader { width: 100%; max-width: 400px; margin: 20px auto; border-radius: 12px; overflow: hidden; }
+    </style>
+</head>
+<body>
+    <h2>Сканирование шайбы</h2>
+    <div id="reader"></div>
+    <button onclick="startScanner()">Включить камеру</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        function startScanner() {
+            const html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                (decodedText) => {
+                    html5QrcodeScanner.stop().then(() => {
+                        tg.sendData(decodedText); 
+                        tg.close();
+                    });
+                },
+                (errorMessage) => { }
+            ).catch(err => alert("Ошибка камеры: " + err));
+        }
+    </script>
+</body>
+</html>
