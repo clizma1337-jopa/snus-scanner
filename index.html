@@ -9,33 +9,53 @@
     <style>
         body { font-family: sans-serif; background: #1c1c1e; color: white; text-align: center; padding: 20px; }
         button { background: #007aff; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 10px; margin-top: 20px; width: 100%; cursor: pointer; }
-        #reader { width: 100%; max-width: 400px; margin: 20px auto; border-radius: 12px; overflow: hidden; }
+        #reader { width: 100%; max-width: 400px; margin: 20px auto; border-radius: 12px; overflow: hidden; background: #2c2c2e; min-height: 250px; }
+        #status { color: #ff3b30; margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
     <h2>Сканирование шайбы</h2>
     <div id="reader"></div>
-    <button onclick="startScanner()">Включить камеру</button>
+    <button id="startBtn">Включить камеру</button>
+    <div id="status"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
-        function startScanner() {
-            const html5QrcodeScanner = new Html5Qrcode("reader");
+        const statusDiv = document.getElementById('status');
+        let html5QrcodeScanner = null;
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            statusDiv.innerText = "Запуск камеры...";
+            
+            // Если сканер уже запущен, не пересоздаем его
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5Qrcode("reader");
+            }
+            
             html5QrcodeScanner.start(
-                { facingMode: "environment" },
+                { facingMode: "environment" }, // Просим заднюю камеру
                 { fps: 10, qrbox: { width: 250, height: 150 } },
                 (decodedText) => {
                     html5QrcodeScanner.stop().then(() => {
                         tg.sendData(decodedText); 
                         tg.close();
+                    }).catch(err => {
+                        statusDiv.innerText = "Ошибка остановки: " + err;
                     });
                 },
-                (errorMessage) => { }
-            ).catch(err => alert("Ошибка камеры: " + err));
-        }
+                (errorMessage) => { /* тихий пропуск ошибок фокуса */ }
+            ).then(() => {
+                statusDiv.innerText = "Камера успешно работает!";
+                statusDiv.style.color = "#34c759";
+            }).catch(err => {
+                // Если телефон заблокирует доступ, мы увидим точный текст ошибки прямо на экране
+                statusDiv.innerText = "Ошибка запуска камеры: " + err;
+                statusDiv.style.color = "#ff3b30";
+            });
+        });
     </script>
 </body>
 </html>
